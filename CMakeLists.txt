@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(CMakeSFMLProject LANGUAGES CXX)
+project(Pong LANGUAGES CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -12,5 +12,9 @@ FetchContent_Declare(SFML
     SYSTEM)
 FetchContent_MakeAvailable(SFML)
 
-add_executable(main src/main.cpp)
-target_link_libraries(main PRIVATE SFML::Graphics)
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+    src/events.cpp
+    "src/configuration.hpp" "src/ball.cpp" "src/paddle.cpp" "src/game.cpp" "src/controllers/humanController.cpp" "src/controllers/deterministicController.cpp")
+
+target_link_libraries(${PROJECT_NAME} PRIVATE SFML::Graphics)
