@@ -22,6 +22,42 @@ Game::Game()
 	window.setFramerateLimit(conf::max_framerate);
 }
 
+static void handlePaddleCollision(Ball& ball, const Paddle& paddle,
+	const sf::Vector2f& prev_ball_position,
+	float adjustmentMagnitude, float desiredSpeed)
+{
+	if (Collision::circleIntersectsRectangle(ball.shape, paddle.shape)) {
+		ball.position = prev_ball_position;
+
+		sf::FloatRect paddleBounds = paddle.shape.getGlobalBounds();
+
+		// Calcular el centro horizontal de la pala usando .position y .size
+		float paddleCenterX = paddleBounds.position.x + paddleBounds.size.x / 2.f;
+
+		// Obtener la posición x del centro de la bola en el momento de la colisión
+		float ballCenterX = ball.position.x;
+
+		// Calcular la diferencia entre el centro de la bola y el centro de la pala
+		float diffX = ballCenterX - paddleCenterX;
+
+		// Normalizar la diferencia respecto al ancho de la pala (va de -1 a 1 aproximadamente)
+		float factor = diffX / (paddleBounds.size.x / 2.f);
+
+		// Ajustar la componente x de la velocidad en función de 'factor'
+		ball.velocity.x += factor * adjustmentMagnitude;
+
+		// Invertir la componente vertical para el rebote
+		ball.velocity.y = -ball.velocity.y;
+
+		// Normalizar la velocidad para que su magnitud sea desiredSpeed
+		float currentSpeed = std::sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+		if (currentSpeed != 0.f) {
+			ball.velocity.x = (ball.velocity.x / currentSpeed) * desiredSpeed;
+			ball.velocity.y = (ball.velocity.y / currentSpeed) * desiredSpeed;
+		}
+	}
+}
+
 void Game::run()
 {
 	while (window.isOpen())
@@ -39,7 +75,7 @@ void Game::processEvents()
 
 void Game::update()
 {
-	const sf::Vector2f position = ball.position;
+	const sf::Vector2f prev_ball_position = ball.position;
 	const float radius = ball.shape.getRadius();
 
 	// Updates
@@ -83,17 +119,12 @@ void Game::update()
 	}
 
 	// Colisiones con paletas
-	if (Collision::circleIntersectsRectangle(ball.shape, paddle_1.shape))
-	{
-		ball.position = { position.x, position.y };
-		ball.velocity.y = - ball.velocity.y;
-	}
+	float adjustmentMagnitude = 300.f;
+	float desiredSpeed = 700.f;
 
-	if (Collision::circleIntersectsRectangle(ball.shape, paddle_2.shape))
-	{
-		ball.position = { position.x, position.y };
-		ball.velocity.y = - ball.velocity.y;
-	}
+	handlePaddleCollision(ball, paddle_1, prev_ball_position, adjustmentMagnitude, desiredSpeed);
+	handlePaddleCollision(ball, paddle_2, prev_ball_position, adjustmentMagnitude, desiredSpeed);
+
 
 	// Marcar punto
 	if (ball.position.y - radius < 0.f) {
@@ -112,13 +143,13 @@ void Game::update()
 	}
 
 	// Colisiones con paredes
-	if (position.x - radius < 0.f) {
-		ball.position = { position.x + 1, position.y };
+	if (ball.position.x - radius < 0.f) {
+		ball.position = { prev_ball_position.x + 1, prev_ball_position.y };
 		ball.velocity.x = -ball.velocity.x;
 	}
 
-	if (position.x + radius > conf::window_size_f.x) {
-		ball.position = { position.x - 1, position.y };
+	if (ball.position.x + radius > conf::window_size_f.x) {
+		ball.position = { prev_ball_position.x - 1, prev_ball_position.y };
 		ball.velocity.x = -ball.velocity.x;
 	}
 
